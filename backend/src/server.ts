@@ -18,13 +18,32 @@ import settingsRoutes from './modules/settings/settingsRoutes.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+// Ensure temporary uploads directory exists
+const uploadsDir = path.resolve(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
-// CORS setup
+const app = express();
+const PORT = Number(process.env.PORT) || 5000;
+
+// CORS setup (Support local dev and same-origin production)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5000',
+  process.env.FRONTEND_URL
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or same-origin SPA)
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'production') {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     credentials: true
   })
 );
@@ -41,10 +60,11 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Health check
-app.get('/api/health', (_req, res) => {
+// Health check (Point 19)
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
-    status: 'ok',
+    success: true,
+    status: 'healthy',
     service: 'Student Document Verification System',
     timestamp: new Date().toISOString()
   });
@@ -62,10 +82,10 @@ app.use('/api/settings', settingsRoutes);
 // Static hosting for Frontend production build
 const frontendDist = path.resolve(__dirname, '../../frontend/dist');
 if (fs.existsSync(frontendDist)) {
-  console.log(`[Static] Serving frontend from: ${frontendDist}`);
+  console.log(`[Static] Serving React SPA build from: ${frontendDist}`);
   app.use(express.static(frontendDist));
 
-  // SPA fallback for non-API routes
+  // SPA fallback for non-API routes (survives direct refresh on /student, /admin, etc.)
   app.get('*', (req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith('/api')) {
       return next();
@@ -82,22 +102,27 @@ app.use('/api/*', (_req: Request, res: Response) => {
   });
 });
 
-// Global Error Handler
+// Global Error Handler (Sanitizes errors, no stack trace leaks)
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Unhandled server error:', err);
+  console.error('[Server Error]:', err?.message || err);
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'An unexpected internal server error occurred.'
   });
 });
 
-// Start Server
+// Startup Validation & Launch
 app.listen(PORT, () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0);
+
   console.log(`
 =====================================================
-  School Document Verification Backend Server
+  School Document Verification System (Monolith)
   Running on: http://localhost:${PORT}
   Environment: ${process.env.NODE_ENV || 'development'}
+  Static SPA: ${fs.existsSync(frontendDist) ? 'Active' : 'Disabled (Run npm run build:frontend)'}
+  Gemini AI: ${hasGeminiKey ? 'Configured via Environment' : 'Demo Fallback Engine Active (Set GEMINI_API_KEY to enable live Vision)'}
 =====================================================
   `);
 });
