@@ -4,6 +4,13 @@ A fast, lightweight, maintainable monolithic web application designed for school
 
 ---
 
+## 🌐 Live Application URLs
+
+* **Parent / Student Portal**: [https://school-qby2.onrender.com/student](https://school-qby2.onrender.com/student)
+* **Staff / Admin Login Console**: [https://school-qby2.onrender.com/admin/login](https://school-qby2.onrender.com/admin/login)
+
+---
+
 ## 🌟 Key Features
 
 ### 1. Parent / Student Submission Portal (`/student`)
@@ -67,17 +74,6 @@ A fast, lightweight, maintainable monolithic web application designed for school
    - `DATABASE_URL`: `file:./dev.db`
    - `JWT_SECRET`: `your-random-jwt-secret-key-2026`
    - `GEMINI_API_KEY`: `your_google_gemini_api_key`
-
----
-
-### Option 2: Railway.app
-
-1. Go to [Railway.app](https://railway.app) and create a **New Project from GitHub Repo**.
-2. Select `TSK2003/school`.
-3. Railway automatically detects Node.js.
-4. Set **Build Command**: `npm run install:all && npm run build && npm run seed`
-5. Set **Start Command**: `npm run start`
-6. Add `GEMINI_API_KEY` and `JWT_SECRET` in the Variables tab.
 
 ---
 
