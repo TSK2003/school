@@ -37,7 +37,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or same-origin SPA)
       if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'production') {
         callback(null, true);
       } else {
@@ -79,8 +78,15 @@ app.use('/api/verification', verificationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 
-// Static hosting for Frontend production build
-const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+// Static hosting for Frontend production build with multi-path resolution
+const possibleFrontendPaths = [
+  path.resolve(__dirname, '../../frontend/dist'),
+  path.resolve(__dirname, '../frontend/dist'),
+  path.resolve(process.cwd(), 'frontend/dist'),
+  path.resolve(process.cwd(), '../frontend/dist')
+];
+const frontendDist = possibleFrontendPaths.find(p => fs.existsSync(p)) || possibleFrontendPaths[0];
+
 if (fs.existsSync(frontendDist)) {
   console.log(`[Static] Serving React SPA build from: ${frontendDist}`);
   app.use(express.static(frontendDist));
@@ -92,6 +98,8 @@ if (fs.existsSync(frontendDist)) {
     }
     res.sendFile(path.join(frontendDist, 'index.html'));
   });
+} else {
+  console.warn(`[Static] Frontend dist not found. Checked:`, possibleFrontendPaths);
 }
 
 // Global API 404 handler
@@ -113,7 +121,6 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 // Startup Validation & Launch
 app.listen(PORT, () => {
-  const isProduction = process.env.NODE_ENV === 'production';
   const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0);
 
   console.log(`
@@ -122,7 +129,7 @@ app.listen(PORT, () => {
   Running on: http://localhost:${PORT}
   Environment: ${process.env.NODE_ENV || 'development'}
   Static SPA: ${fs.existsSync(frontendDist) ? 'Active' : 'Disabled (Run npm run build:frontend)'}
-  Gemini AI: ${hasGeminiKey ? 'Configured via Environment' : 'Demo Fallback Engine Active (Set GEMINI_API_KEY to enable live Vision)'}
+  Gemini AI: ${hasGeminiKey ? 'Configured via Environment' : 'Demo Fallback Engine Active'}
 =====================================================
   `);
 });
