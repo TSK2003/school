@@ -1,0 +1,50 @@
+import React from 'react';
+import { cn } from '../../lib/utils';
+
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string;
+  helperText?: string;
+  leftIcon?: React.ReactNode;
+}
+
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, label, error, helperText, leftIcon, id, ...props }, ref) => {
+    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+
+    return (
+      <div className="w-full space-y-1.5">
+        {label && (
+          <label htmlFor={inputId} className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            {label} {props.required && <span className="text-rose-500">*</span>}
+          </label>
+        )}
+        <div className="relative flex items-center">
+          {leftIcon && (
+            <div className="absolute left-3 text-slate-400 pointer-events-none">
+              {leftIcon}
+            </div>
+          )}
+          <input
+            id={inputId}
+            ref={ref}
+            className={cn(
+              'flex h-9 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus-visible:ring-blue-400',
+              leftIcon && 'pl-9',
+              error && 'border-rose-500 focus-visible:ring-rose-500 dark:border-rose-500',
+              className
+            )}
+            {...props}
+          />
+        </div>
+        {error ? (
+          <p className="text-xs text-rose-500 font-medium">{error}</p>
+        ) : helperText ? (
+          <p className="text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
+        ) : null}
+      </div>
+    );
+  }
+);
+
+Input.displayName = 'Input';

@@ -1,0 +1,28 @@
+{
+  "name": "student-document-verification-system",
+  "version": "1.0.0",
+  "description": "Student Document Collection and AI-Assisted Verification System",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:all": "node scripts/dev.js",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "start": "npm run start --prefix backend",
+    "seed": "npm run seed --prefix backend",
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend"
+  },
+  "keywords": [
+    "education",
+    "document-verification",
+    "gemini-ai",
+    "ocr",
+    "react",
+    "express",
+    "prisma"
+  ],
+  "author": "",
+  "license": "ISC"
+}

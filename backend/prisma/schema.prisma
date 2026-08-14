@@ -1,0 +1,83 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Student {
+  id           String        @id @default(uuid())
+  name         String
+  standard     String        // e.g. "6", "7", "8", "9", "10"
+  section      String        // e.g. "A", "B"
+  academicYear String        @default("2025-2026")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  applications Application[]
+
+  @@index([standard, section])
+  @@index([name])
+}
+
+model Staff {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("STAFF") // "ADMIN", "STAFF"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Application {
+  id                String     @id @default(uuid())
+  applicationNumber String     @unique
+  studentId         String
+  student           Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status            String     @default("PENDING_VERIFICATION") // "DRAFT", "SUBMITTED", "PROCESSING", "PENDING_VERIFICATION", "VERIFIED", "REJECTED"
+  remarks           String?
+  submittedAt       DateTime   @default(now())
+  verifiedAt        DateTime?
+  verifiedBy        String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  documents         Document[]
+
+  @@index([status])
+  @@index([studentId])
+  @@index([applicationNumber])
+}
+
+model Document {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type          String      // "AADHAAR", "BIRTH_CERTIFICATE", "COMMUNITY_CERTIFICATE"
+  fileName      String
+  filePath      String
+  fileType      String?     // "image/jpeg", "image/png", "application/pdf"
+  fileSize      Int?
+  status        String      @default("UPLOADED") // "UPLOADED", "PROCESSING", "OCR_COMPLETED", "MATCHED", "MISMATCH", "STAFF_APPROVED", "STAFF_REJECTED"
+  ocrResult     String?     // Stored JSON representation of extracted structure
+  extractedName String?
+  matchScore    Float?      // 0 - 100 percentage
+  uploadedAt    DateTime    @default(now())
+  processedAt   DateTime?
+  verifiedAt    DateTime?
+
+  @@index([applicationId])
+  @@index([type])
+}
+
+model SystemSetting {
+  id             String   @id @default("default")
+  activeProvider String   @default("AUTO") // "AUTO", "GEMINI", "GROQ", "MISTRAL"
+  geminiApiKey   String?
+  groqApiKey     String?
+  mistralApiKey  String?
+  updatedAt      DateTime @updatedAt
+}
