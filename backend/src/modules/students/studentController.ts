@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
 
 const prisma = new PrismaClient();
 
@@ -287,5 +288,56 @@ export async function createStudent(req: Request, res: Response): Promise<void> 
   } catch (error: any) {
     console.error('Error creating student:', error);
     res.status(500).json({ success: false, message: 'Failed to create student record.' });
+  }
+}
+
+/**
+ * Admin portal: Delete a student record and all associated records
+ */
+export async function deleteStudent(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const student = await prisma.student.findUnique({
+      where: { id },
+      include: {
+        applications: {
+          include: {
+            documents: true
+          }
+        }
+      }
+    });
+
+    if (!student) {
+      res.status(404).json({ success: false, message: 'Student record not found.' });
+      return;
+    }
+
+    // Clean up uploaded document files on disk if any
+    for (const app of student.applications) {
+      for (const doc of app.documents) {
+        try {
+          if (doc.filePath && fs.existsSync(doc.filePath)) {
+            fs.unlinkSync(doc.filePath);
+          }
+        } catch (e) {
+          console.warn('Could not delete file on disk:', doc.filePath);
+        }
+      }
+    }
+
+    // Delete student (Cascade deletes applications and documents)
+    await prisma.student.delete({
+      where: { id }
+    });
+
+    res.json({
+      success: true,
+      message: `Student ${student.name} deleted successfully.`
+    });
+  } catch (error: any) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete student record.' });
   }
 }

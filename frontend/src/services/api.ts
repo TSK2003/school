@@ -102,6 +102,13 @@ export const api = {
         body: JSON.stringify(payload)
       });
       return (await res.json()) as ApiResponse<StudentModel>;
+    },
+    async deleteStudent(id: string) {
+      const res = await fetch(`${API_BASE}/students/${id}`, {
+        method: 'DELETE',
+        headers: { ...getAuthHeader() }
+      });
+      return (await res.json()) as ApiResponse<any>;
     }
   },
 

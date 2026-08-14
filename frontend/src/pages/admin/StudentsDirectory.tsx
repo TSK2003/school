@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
 import { Dialog } from '../../components/ui/Dialog';
-import { Search, ChevronLeft, ChevronRight, Eye, RefreshCw, Filter, UserPlus } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Eye, RefreshCw, Filter, UserPlus, Trash2, AlertTriangle } from 'lucide-react';
 import { formatDate } from '../../lib/utils';
 import { Link } from 'react-router-dom';
 
@@ -39,6 +39,11 @@ export const StudentsDirectory: React.FC = () => {
   const [newStudentYear, setNewStudentYear] = useState('2025-2026');
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
   const [addStudentError, setAddStudentError] = useState<string | null>(null);
+
+  // Delete Student state
+  const [confirmDeleteStudent, setConfirmDeleteStudent] = useState<StudentModel | null>(null);
+  const [isDeletingStudent, setIsDeletingStudent] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Fetch dropdown options
   useEffect(() => {
@@ -122,6 +127,29 @@ export const StudentsDirectory: React.FC = () => {
     }
   };
 
+  const handleDeleteStudent = async () => {
+    if (!confirmDeleteStudent) return;
+    setIsDeletingStudent(true);
+    setDeleteError(null);
+
+    try {
+      const res = await api.students.deleteStudent(confirmDeleteStudent.id);
+      if (res.success) {
+        setConfirmDeleteStudent(null);
+        if (isDetailOpen && selectedStudent?.id === confirmDeleteStudent.id) {
+          setIsDetailOpen(false);
+        }
+        fetchStudents(pagination.page);
+      } else {
+        setDeleteError(res.message || 'Failed to delete student.');
+      }
+    } catch (err: any) {
+      setDeleteError(err?.message || 'Error deleting student record.');
+    } finally {
+      setIsDeletingStudent(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -175,7 +203,7 @@ export const StudentsDirectory: React.FC = () => {
                 <option value="ALL">All Standards</option>
                 {standardsList.map(s => (
                   <option key={s} value={s}>
-                    Standard {s}
+                    {['PreKG', 'LKG', 'UKG'].includes(s) ? s : `Standard ${s}`}
                   </option>
                 ))}
               </Select>
@@ -257,7 +285,7 @@ export const StudentsDirectory: React.FC = () => {
                         {st.name}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
-                        Standard {st.standard}
+                        {['PreKG', 'LKG', 'UKG'].includes(st.standard) ? st.standard : `Standard ${st.standard}`}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         Section {st.section}
@@ -299,6 +327,18 @@ export const StudentsDirectory: React.FC = () => {
                               </Button>
                             </Link>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5"
+                            onClick={() => {
+                              setConfirmDeleteStudent(st);
+                              setDeleteError(null);
+                            }}
+                            title="Delete Student Record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -412,6 +452,52 @@ export const StudentsDirectory: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Dialog>
+
+      {/* Delete Student Confirmation Dialog */}
+      <Dialog
+        isOpen={Boolean(confirmDeleteStudent)}
+        onClose={() => setConfirmDeleteStudent(null)}
+        title="Delete Student Record"
+        description="Permanently remove student and all associated document verification history."
+      >
+        <div className="space-y-4 text-xs">
+          {deleteError && (
+            <div className="p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-700">
+              {deleteError}
+            </div>
+          )}
+
+          <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 flex items-start gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-rose-900">
+                Are you sure you want to delete {confirmDeleteStudent?.name}?
+              </p>
+              <p className="text-rose-700 text-[11px] mt-0.5">
+                Class: Standard {confirmDeleteStudent?.standard}-{confirmDeleteStudent?.section} • Academic Year: {confirmDeleteStudent?.academicYear}
+              </p>
+              <p className="text-rose-600 text-[10px] mt-1">
+                This action cannot be undone. Any submitted certificates and verification records for this student will also be deleted.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" size="sm" onClick={() => setConfirmDeleteStudent(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              isLoading={isDeletingStudent}
+              onClick={handleDeleteStudent}
+              leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+            >
+              Delete Student
+            </Button>
+          </div>
+        </div>
       </Dialog>
 
       {/* Student Details Dialog */}
