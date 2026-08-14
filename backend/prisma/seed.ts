@@ -95,17 +95,15 @@ async function main() {
 
   // Ensure Default System Setting exists
   const envKey = process.env.GEMINI_API_KEY || null;
-  await prisma.systemSetting.upsert({
+  const settingData: any = {
+    id: 'default',
+    geminiApiKey: envKey
+  };
+
+  await (prisma.systemSetting as any).upsert({
     where: { id: 'default' },
-    create: {
-      id: 'default',
-      activeProvider: 'GEMINI',
-      geminiApiKey: envKey
-    },
-    update: {
-      activeProvider: 'GEMINI',
-      ...(envKey ? { geminiApiKey: envKey } : {})
-    }
+    create: settingData,
+    update: settingData
   });
 
   console.log('✓ Verification queue starts clean (0 pending applications).');
